@@ -1,10 +1,10 @@
-﻿using ASP.NET_WebAPI6.DTO;
-using ASP.NET_WebAPI6.Entities;
+﻿using gestion_scolaire.DTO;
+using gestion_scolaire.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
-namespace ASP.NET_WebAPI6.Controllers
+namespace gestion_scolaire.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -17,18 +17,21 @@ namespace ASP.NET_WebAPI6.Controllers
             this.DBContext = DBContext;
         }
 
-        [HttpGet("GetUsers")]
-        public async Task<ActionResult<List<UserDTO>>> Get()
+        [HttpGet("Get")]
+        public async Task<ActionResult<List<User>>> Get()
         {
             var List = await DBContext.Users.Select(
-                s => new UserDTO
+                s => new User
                 {
                     Id = s.Id,
-                    FirstName = s.FirstName,
-                    LastName = s.LastName,
-                    Username = s.Username,
+                    Name = s.Name,
+                    Email = s.Email,
+                    Cin = s.Cin,
+                    Age = s.Age,
                     Password = s.Password,
-                    EnrollmentDate = s.EnrollmentDate
+                    IsEnabled = s.IsEnabled,
+                    Role = s.Role,
+                    Created = s.Created,
                 }
             ).ToListAsync();
 
@@ -42,18 +45,50 @@ namespace ASP.NET_WebAPI6.Controllers
             }
         }
 
-        [HttpGet("GetUserById")]
+
+        [HttpPost("login")]
+        public async Task<ActionResult<UserDTO>> login(User user)
+        {
+            UserDTO User = await DBContext.Users.Select(
+                    s => new UserDTO
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        Email = s.Email,
+                        Cin = s.Cin,
+                        Age = s.Age,
+                        Password = s.Password,
+                        IsEnabled = s.IsEnabled,
+                        Role = s.Role,
+                        Created = s.Created,
+                    })
+                .FirstOrDefaultAsync(s => s.Email == user.Email && s.Password == user.Password);
+
+            if (User == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                return User;
+            }
+        }
+
+        [HttpGet("GetById")]
         public async Task<ActionResult<UserDTO>> GetUserById(int Id)
         {
             UserDTO User = await DBContext.Users.Select(
                     s => new UserDTO
                     {
                         Id = s.Id,
-                        FirstName = s.FirstName,
-                        LastName = s.LastName,
-                        Username = s.Username,
+                        Name = s.Name,
+                        Email = s.Email,
+                        Cin = s.Cin,
+                        Age= s.Age,
                         Password = s.Password,
-                        EnrollmentDate = s.EnrollmentDate
+                        IsEnabled = s.IsEnabled,
+                        Role = s.Role,
+                        Created = s.Created,
                     })
                 .FirstOrDefaultAsync(s => s.Id == Id);
 
@@ -66,42 +101,72 @@ namespace ASP.NET_WebAPI6.Controllers
                 return User;
             }
         }
+        [HttpGet("GetByEmail")]
+        public async Task<User> GetByEmail(string email)
+        {
+            User User = await DBContext.Users.Select(
+                    s => new User
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        Email = s.Email,
+                        Cin = s.Cin,
+                        Age = s.Age,
+                        Password = s.Password,
+                        IsEnabled = s.IsEnabled,
+                        Role = s.Role,
+                        Created = s.Created,
+                    })
+                .FirstOrDefaultAsync(s => s.Email == email);
 
-        [HttpPost("InsertUser")]
-        public async Task<HttpStatusCode> InsertUser(UserDTO User)
+            if (User == null)
+            {
+                throw new Exception("User not found.");
+            }
+            else
+            {
+                return User;
+            }
+        }
+
+        [HttpPost("Add")]
+        public async Task<User> InsertUser(UserDTO User)
         {
             var entity = new User()
             {
                 Id = User.Id,
-                FirstName = User.FirstName,
-                LastName = User.LastName,
-                Username = User.Username,
+                Name = User.Name,
+                Email = User.Email,
+                Cin = User.Cin,
+                Age = User.Age,
                 Password = User.Password,
-                EnrollmentDate = User.EnrollmentDate
+                IsEnabled = User.IsEnabled,
+                Role = User.Role,
+                Created = User.Created
             };
-
             DBContext.Users.Add(entity);
             await DBContext.SaveChangesAsync();
-
-            return HttpStatusCode.Created;
+            // return GetByEmail(entity.Email).Result;
+            return entity;
         }
 
-        [HttpPut("UpdateUser")]
-        public async Task<HttpStatusCode> UpdateUser(UserDTO User)
+        [HttpPut("Update")]
+        public async Task<HttpStatusCode> UpdateUser(User user)
         {
-            var entity = await DBContext.Users.FirstOrDefaultAsync(s => s.Id == User.Id);
-
-            entity.FirstName = User.FirstName;
-            entity.LastName = User.LastName;
-            entity.Username = User.Username;
-            entity.Password = User.Password;
-            entity.EnrollmentDate = User.EnrollmentDate;
-
+            var entity = await DBContext.Users.FirstOrDefaultAsync(s => s.Id == user.Id);
+            entity.Name = user.Name;
+            entity.Cin = user.Cin;
+            entity.Age = user.Age;
+            entity.Password = user.Password;
+            entity.IsEnabled = user.IsEnabled;
+            entity.Created = user.Created;
+            entity.Role = user.Role;
+            DBContext.Users.Update(entity);
             await DBContext.SaveChangesAsync();
             return HttpStatusCode.OK;
         }
 
-        [HttpDelete("DeleteUser/{Id}")]
+        [HttpDelete("Delete/{Id}")]
         public async Task<HttpStatusCode> DeleteUser(int Id)
         {
             var entity = new User()
